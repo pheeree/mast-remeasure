@@ -38,10 +38,18 @@ MODES = ["1.1", "1.2", "1.3", "1.4", "1.5",
          "3.1", "3.2", "3.3"]
 
 JUDGES = {
+    # Claude 쌍은 정의만 남김 — 사용자 결정(2026-07-08)으로 파일럿은 Gemini 계열만 사용
     "opus": ("anthropic", "claude-opus-4-8"),
     "sonnet": ("anthropic", "claude-sonnet-5"),
     "gemini": ("gemini", "gemini-2.5-flash"),
+    "gemini-pro": ("gemini", "gemini-2.5-pro"),
 }
+
+# 3단계 진행 임계 (사전 등록, 2026-07-08 — Pro 결과를 보기 전에 확정):
+# 어떤 Gemini judge든 human 다수결 대비 κ ≥ 0.6 (Landis-Koch 'substantial' 경계)을
+# 넘어야 그 judge로 신규 트레이스 재측정(3단계)을 진행한다. 미달이면 judge 이전
+# 실패가 파일럿의 결과다.
+PHASE3_KAPPA_GATE = 0.6
 
 # 원 논문 Table 2 — o1 (few shot), 사람 전문가 대비. 우리 표의 참조 행.
 O1_PAPER = {"accuracy": 0.94, "recall": 0.77, "precision": 0.833, "f1": 0.80, "kappa": 0.77}
@@ -79,6 +87,76 @@ def record_key(i: int, record: dict) -> str:
     return f"{i:02d}_{record['mas_name']}_{str(record['trace_id'])[:40]}".replace("/", "_")
 
 
+def create_prompt_reordered(shim: PromptShim, trace: str) -> str:
+    """재구성 변형 — 정의·few-shot을 트레이스 *앞*으로.
+
+    원 프롬프트와의 차이는 딱 둘: ① 블록 순서(정의→예시→트레이스), ② 그 순서를 지칭하던
+    메타 문장 한 개. 나머지 문장은 agentdash 원문 그대로다. Flash가 원 순서(정의가 긴
+    트레이스 *뒤*)에서 κ=0.056을 낸 것이 위치 효과인지 가리는 변형 (2026-07-08).
+    """
+    return (
+        "Below I will provide a multiagent system trace. provide me an analysis of the failure modes and inefficiencies as I will say below. \n"
+        "In the traces, analyze the system behaviour."
+        "There are several failure modes in multiagent systems I identified. I will provide them below. Tell me if you encounter any of them, as a binary yes or no. \n"
+        "Also, give me a one sentence (be brief) summary of the problems with the inefficiencies or failure modes in the trace. Only mark a failure mode if you can provide an example of it in the trace, and specify that in your summary at the end"
+        "Also tell me whether the task is successfully completed or not, as a binary yes or no."
+        "First, I provide you with the definitions of the failure modes and inefficiencies. After the definitions, I will provide you with examples of the failure modes and inefficiencies for you to understand them better. After the examples, I will provide you with the trace."
+        "Tell me if you encounter any of them between the @@ symbols as I will say below, as a binary yes or no."
+        "Here are the things you should answer. Start after the @@ sign and end before the next @@ sign (do not include the @@ symbols in your answer):"
+        "*** begin of things you should answer *** @@"
+        "A. Freeform text summary of the problems with the inefficiencies or failure modes in the trace: <summary>"
+        "B. Whether the task is successfully completed or not: <yes or no>"
+        "C. Whether you encounter any of the failure modes or inefficiencies:"
+        "1.1 Disobey Task Specification: <yes or no>"
+        "1.2 Disobey Role Specification: <yes or no>"
+        "1.3 Step Repetition: <yes or no>"
+        "1.4 Loss of Conversation History: <yes or no>"
+        "1.5 Unaware of Termination Conditions: <yes or no>"
+        "2.1 Conversation Reset: <yes or no>"
+        "2.2 Fail to Ask for Clarification: <yes or no>"
+        "2.3 Task Derailment: <yes or no>"
+        "2.4 Information Withholding: <yes or no>"
+        "2.5 Ignored Other Agent's Input: <yes or no>"
+        "2.6 Action-Reasoning Mismatch: <yes or no>"
+        "3.1 Premature Termination: <yes or no>"
+        "3.2 No or Incorrect Verification: <yes or no>"
+        "3.3 Weak Verification: <yes or no>"
+        "@@*** end of your answer ***"
+        "An example answer is: \n"
+        "A. The task is not completed due to disobeying role specification as agents went rogue and started to chat with each other instead of completing the task. Agents derailed and verifier is not strong enough to detect it.\n"
+        "B. no \n"
+        "C. \n"
+        "1.1 no \n"
+        "1.2 no \n"
+        "1.3 no \n"
+        "1.4 no \n"
+        "1.5 no \n"
+        "1.6 yes \n"
+        "2.1 no \n"
+        "2.2 no \n"
+        "2.3 yes \n"
+        "2.4 no \n"
+        "2.5 no \n"
+        "2.6 yes \n"
+        "2.7 no \n"
+        "3.1 no \n"
+        "3.2 yes \n"
+        "3.3 no \n"
+        "Here are the explanations (definitions) of the failure modes and inefficiencies: \n"
+        f"{shim.definitions} \n"
+        "Here are some examples of the failure modes and inefficiencies: \n"
+        f"{shim.examples}"
+        "Here is the trace: \n"
+        f"{trace}"
+    )
+
+
+def build_prompt(shim: PromptShim, trace: str, variant: str) -> str:
+    if variant == "original":
+        return MastAnnotator._create_evaluation_prompt(shim, trace)
+    return create_prompt_reordered(shim, trace)
+
+
 def call_anthropic(model: str, prompt: str) -> str:
     import anthropic
 
@@ -111,9 +189,10 @@ def call_gemini(model: str, prompt: str) -> str:
     raise RuntimeError("unreachable")
 
 
-def annotate(judge: str, records: list[dict], shim: PromptShim) -> None:
+def annotate(judge: str, records: list[dict], shim: PromptShim, variant: str) -> None:
     provider, model = JUDGES[judge]
-    out_dir = RAW_DIR / judge
+    label = judge if variant == "original" else f"{judge}+{variant}"
+    out_dir = RAW_DIR / label
     out_dir.mkdir(parents=True, exist_ok=True)
     for i, record in enumerate(records):
         key = record_key(i, record)
@@ -121,12 +200,12 @@ def annotate(judge: str, records: list[dict], shim: PromptShim) -> None:
         if out.exists():
             print(f"  [{i + 1}/{len(records)}] {key} — 저장본 재사용", flush=True)
             continue
-        prompt = MastAnnotator._create_evaluation_prompt(shim, record["trace"])
+        prompt = build_prompt(shim, record["trace"], variant)
         t0 = time.time()
         print(f"  [{i + 1}/{len(records)}] {key} — 프롬프트 {len(prompt):,}자 호출...", flush=True)
         text = call_anthropic(model, prompt) if provider == "anthropic" else call_gemini(model, prompt)
         out.write_text(json.dumps({
-            "judge": judge, "model": model, "key": key,
+            "judge": judge, "model": model, "key": key, "variant": variant,
             "prompt_chars": len(prompt), "elapsed_s": round(time.time() - t0, 1),
             "response": text,
         }, ensure_ascii=False, indent=1))
@@ -159,13 +238,13 @@ PARSERS = {
 }
 
 
-def collect_predictions(judge: str, records: list[dict], parser: str) -> tuple[list[int], list[int], dict]:
-    """저장된 raw → 지정 파서 → (y_true, y_pred) 평탄화 + 모드별 집계."""
+def collect_predictions(label: str, records: list[dict], parser: str) -> tuple[list[int], list[int], dict]:
+    """저장된 raw(라벨 디렉토리) → 지정 파서 → (y_true, y_pred) 평탄화 + 모드별 집계."""
     y_true: list[int] = []
     y_pred: list[int] = []
     per_mode = {m: {"tp": 0, "fp": 0, "fn": 0, "tn": 0} for m in MODES}
     for i, record in enumerate(records):
-        raw_path = RAW_DIR / judge / f"{record_key(i, record)}.json"
+        raw_path = RAW_DIR / label / f"{record_key(i, record)}.json"
         if not raw_path.exists():
             continue
         response = json.loads(raw_path.read_text())["response"]
@@ -199,18 +278,19 @@ def metrics_row(y_true: list[int], y_pred: list[int]) -> dict:
 def report(records: list[dict]) -> None:
     from sklearn.metrics import cohen_kappa_score
 
+    labels = sorted(d.name for d in RAW_DIR.iterdir() if d.is_dir()) if RAW_DIR.exists() else []
     rows: dict[str, dict] = {}
     preds: dict[str, list[int]] = {}
     mode_tables: dict[str, dict] = {}
-    for judge in JUDGES:
+    for label in labels:
         for parser in PARSERS:
-            y_true, y_pred, per_mode = collect_predictions(judge, records, parser)
+            y_true, y_pred, per_mode = collect_predictions(label, records, parser)
             if not y_true:
                 continue
-            label = f"{judge}/{parser}"
-            rows[label] = metrics_row(y_true, y_pred)
-            preds[label] = y_pred
-            mode_tables[label] = per_mode
+            key = f"{label}/{parser}"
+            rows[key] = metrics_row(y_true, y_pred)
+            preds[key] = y_pred
+            mode_tables[key] = per_mode
 
     lines = ["# Judge 캘리브레이션 — human 19편 (다수결 GT)", "",
              "원 파서(agentdash v0.1.0)는 모드 ID 점 미이스케이프 + DOTALL 비탐욕으로",
@@ -219,16 +299,16 @@ def report(records: list[dict]) -> None:
               "|---|---|---|---|---|---|---|---|"]
     lines.append(f"| o1 (논문 Table 2) | o1 few-shot | — | {O1_PAPER['accuracy']} | "
                  f"{O1_PAPER['precision']} | {O1_PAPER['recall']} | {O1_PAPER['f1']} | {O1_PAPER['kappa']} |")
-    for label, row in rows.items():
-        judge = label.split("/")[0]
-        lines.append(f"| {label} | {JUDGES[judge][1]} | {row['n_cells']} | {row['accuracy']} | "
+    for key, row in rows.items():
+        base = key.split("/")[0].split("+")[0]
+        lines.append(f"| {key} | {JUDGES[base][1]} | {row['n_cells']} | {row['accuracy']} | "
                      f"{row['precision']} | {row['recall']} | {row['f1']} | {row['kappa']} |")
 
-    for judge in JUDGES:
-        a, s = f"{judge}/agentdash", f"{judge}/strict"
+    for label in labels:
+        a, s = f"{label}/agentdash", f"{label}/strict"
         if a in preds and s in preds:
             diff = sum(1 for x, y in zip(preds[a], preds[s]) if x != y)
-            lines.append(f"\n- {judge}: 두 파서 불일치 {diff}/{len(preds[a])} 셀 "
+            lines.append(f"\n- {label}: 두 파서 불일치 {diff}/{len(preds[a])} 셀 "
                          f"(파서 인공물의 크기)")
 
     done = [j for j in rows
@@ -263,7 +343,9 @@ def report(records: list[dict]) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--judges", default="opus,sonnet,gemini")
+    parser.add_argument("--judges", default="gemini,gemini-pro")
+    parser.add_argument("--prompt-variant", default="original",
+                        choices=["original", "reordered"])
     parser.add_argument("--smoke", action="store_true", help="트레이스 1편만")
     parser.add_argument("--report-only", action="store_true")
     args = parser.parse_args()
@@ -276,8 +358,8 @@ def main() -> int:
     if not args.report_only:
         subset = records[:1] if args.smoke else records
         for judge in [j.strip() for j in args.judges.split(",") if j.strip()]:
-            print(f"\n== judge: {judge} ({JUDGES[judge][1]}) — {len(subset)}편")
-            annotate(judge, subset, shim)
+            print(f"\n== judge: {judge} ({JUDGES[judge][1]}, {args.prompt_variant}) — {len(subset)}편")
+            annotate(judge, subset, shim, args.prompt_variant)
 
     report(records)
     return 0

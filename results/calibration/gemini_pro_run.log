@@ -1,0 +1,7 @@
+human 트레이스 19편, 정의 13,162자, few-shot 67,469자
+
+== judge: gemini-pro (gemini-2.5-pro) — 19편
+  [1/19] 00_AppWorld_0 — 프롬프트 109,909자 호출...
+    Gemini ClientError — 30s 대기 후 재시도
+    Gemini ClientError — 60s 대기 후 재시도
+    Gemini ClientError — 90s 대기 후 재시도

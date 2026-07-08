@@ -1,0 +1,58 @@
+human 트레이스 19편, 정의 13,162자, few-shot 67,469자
+
+== judge: gemini (gemini-2.5-flash, reordered) — 19편
+  [1/19] 00_AppWorld_0 — 프롬프트 109,948자 호출...
+    Gemini ClientError — 30s 대기 후 재시도
+    Gemini ClientError — 60s 대기 후 재시도
+    Gemini ClientError — 90s 대기 후 재시도
+Traceback (most recent call last):
+  File "/Users/pheeree/PROJECT/mast-remeasure/scripts/calibrate_judges.py", line 369, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/Users/pheeree/PROJECT/mast-remeasure/scripts/calibrate_judges.py", line 362, in main
+    annotate(judge, subset, shim, args.prompt_variant)
+    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/pheeree/PROJECT/mast-remeasure/scripts/calibrate_judges.py", line 206, in annotate
+    text = call_anthropic(model, prompt) if provider == "anthropic" else call_gemini(model, prompt)
+                                                                         ~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/pheeree/PROJECT/mast-remeasure/scripts/calibrate_judges.py", line 181, in call_gemini
+    response = client.models.generate_content(model=model, contents=prompt)
+  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/google/genai/models.py", line 6276, in generate_content
+    response = self._generate_content(
+        model=model, contents=contents, config=parsed_config
+    )
+  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/google/genai/models.py", line 4730, in _generate_content
+    response = self._api_client.request(
+        'post', path, request_dict, http_options
+    )
+  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/google/genai/_api_client.py", line 1537, in request
+    response = self._request(http_request, http_options, stream=False)
+  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/google/genai/_api_client.py", line 1332, in _request
+    return self._retry(self._request_once, http_request, stream)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+          ~~~~~~~~~~~~~~~~~^^
+  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+          ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/pheeree/miniconda3/lib/python3.13/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/Users/pheeree/miniconda3/lib/python3.13/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/google/genai/_api_client.py", line 1309, in _request_once
+    errors.APIError.raise_for_response(response)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/google/genai/errors.py", line 155, in raise_for_response
+    cls.raise_error(response.status_code, response_json, response)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/google/genai/errors.py", line 184, in raise_error
+    raise ClientError(status_code, response_json, response)
+google.genai.errors.ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 989.961881ms.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-2.5-flash'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '0s'}]}}
