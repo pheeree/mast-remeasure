@@ -2,57 +2,82 @@ human 트레이스 19편, 정의 13,162자, few-shot 67,469자
 
 == judge: gemini (gemini-2.5-flash, reordered) — 19편
   [1/19] 00_AppWorld_0 — 프롬프트 109,948자 호출...
+    Gemini ServerError — 30s 대기 후 재시도
+      완료 (68s)
+  [2/19] 01_HyperAgent_1 — 프롬프트 348,372자 호출...
+      완료 (30s)
+  [3/19] 02_AG2_2 — 프롬프트 91,455자 호출...
+      완료 (16s)
+  [4/19] 03_ChatDev_3 — 프롬프트 388,850자 호출...
+      완료 (32s)
+  [5/19] 04_MetaGPT_4 — 프롬프트 85,893자 호출...
+      완료 (28s)
+  [6/19] 05_AppWorld_5 — 프롬프트 117,167자 호출...
+      완료 (24s)
+  [7/19] 06_HyperAgent_6 — 프롬프트 129,610자 호출...
+      완료 (28s)
+  [8/19] 07_AG2_7 — 프롬프트 89,894자 호출...
+      완료 (17s)
+  [9/19] 08_ChatDev_8 — 프롬프트 388,850자 호출...
+      완료 (21s)
+  [10/19] 09_MetaGPT_9 — 프롬프트 87,392자 호출...
+      완료 (18s)
+  [11/19] 10_HyperAgent_10 — 프롬프트 727,790자 호출...
     Gemini ClientError — 30s 대기 후 재시도
-    Gemini ClientError — 60s 대기 후 재시도
-    Gemini ClientError — 90s 대기 후 재시도
-Traceback (most recent call last):
-  File "/Users/pheeree/PROJECT/mast-remeasure/scripts/calibrate_judges.py", line 369, in <module>
-    sys.exit(main())
-             ~~~~^^
-  File "/Users/pheeree/PROJECT/mast-remeasure/scripts/calibrate_judges.py", line 362, in main
-    annotate(judge, subset, shim, args.prompt_variant)
-    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/pheeree/PROJECT/mast-remeasure/scripts/calibrate_judges.py", line 206, in annotate
-    text = call_anthropic(model, prompt) if provider == "anthropic" else call_gemini(model, prompt)
-                                                                         ~~~~~~~~~~~^^^^^^^^^^^^^^^
-  File "/Users/pheeree/PROJECT/mast-remeasure/scripts/calibrate_judges.py", line 181, in call_gemini
-    response = client.models.generate_content(model=model, contents=prompt)
-  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/google/genai/models.py", line 6276, in generate_content
-    response = self._generate_content(
-        model=model, contents=contents, config=parsed_config
-    )
-  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/google/genai/models.py", line 4730, in _generate_content
-    response = self._api_client.request(
-        'post', path, request_dict, http_options
-    )
-  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/google/genai/_api_client.py", line 1537, in request
-    response = self._request(http_request, http_options, stream=False)
-  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/google/genai/_api_client.py", line 1332, in _request
-    return self._retry(self._request_once, http_request, stream)  # type: ignore[no-any-return]
-           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/tenacity/__init__.py", line 470, in __call__
-    do = self.iter(retry_state=retry_state)
-  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/tenacity/__init__.py", line 371, in iter
-    result = action(retry_state)
-  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/tenacity/__init__.py", line 413, in exc_check
-    raise retry_exc.reraise()
-          ~~~~~~~~~~~~~~~~~^^
-  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/tenacity/__init__.py", line 184, in reraise
-    raise self.last_attempt.result()
-          ~~~~~~~~~~~~~~~~~~~~~~~~^^
-  File "/Users/pheeree/miniconda3/lib/python3.13/concurrent/futures/_base.py", line 449, in result
-    return self.__get_result()
-           ~~~~~~~~~~~~~~~~~^^
-  File "/Users/pheeree/miniconda3/lib/python3.13/concurrent/futures/_base.py", line 401, in __get_result
-    raise self._exception
-  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/tenacity/__init__.py", line 473, in __call__
-    result = fn(*args, **kwargs)
-  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/google/genai/_api_client.py", line 1309, in _request_once
-    errors.APIError.raise_for_response(response)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
-  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/google/genai/errors.py", line 155, in raise_for_response
-    cls.raise_error(response.status_code, response_json, response)
-    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/pheeree/miniconda3/lib/python3.13/site-packages/google/genai/errors.py", line 184, in raise_error
-    raise ClientError(status_code, response_json, response)
-google.genai.errors.ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 989.961881ms.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-2.5-flash'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '0s'}]}}
+      완료 (55s)
+  [12/19] 11_AppWorld_11 — 프롬프트 117,799자 호출...
+      완료 (19s)
+  [13/19] 12_AG2_12 — 프롬프트 94,802자 호출...
+    Gemini ClientError — 30s 대기 후 재시도
+      완료 (54s)
+  [14/19] 13_ChatDev_13 — 프롬프트 397,571자 호출...
+      완료 (30s)
+  [15/19] 14_MetaGPT_14 — 프롬프트 85,737자 호출...
+      완료 (25s)
+  [16/19] 15_ChatDev_15 — 프롬프트 391,505자 호출...
+      완료 (36s)
+  [17/19] 16_MetaGPT_16 — 프롬프트 89,803자 호출...
+      완료 (23s)
+  [18/19] 17_GAIA_17 — 프롬프트 139,076자 호출...
+      완료 (17s)
+  [19/19] 18_GAIA_18 — 프롬프트 129,443자 호출...
+      완료 (28s)
+# Judge 캘리브레이션 — human 19편 (다수결 GT)
+
+원 파서(agentdash v0.1.0)는 모드 ID 점 미이스케이프 + DOTALL 비탐욕으로
+오귀속이 실측돼(스크립트 docstring), strict(줄 단위) 파서를 병기한다.
+
+| judge/parser | model | cells | acc | prec | recall | F1 | κ |
+|---|---|---|---|---|---|---|---|
+| o1 (논문 Table 2) | o1 few-shot | — | 0.94 | 0.833 | 0.77 | 0.8 | 0.77 |
+| gemini/agentdash | gemini-2.5-flash | 266 | 0.662 | 0.216 | 0.333 | 0.262 | 0.056 |
+| gemini/strict | gemini-2.5-flash | 266 | 0.662 | 0.216 | 0.333 | 0.262 | 0.056 |
+| gemini+reordered/agentdash | gemini-2.5-flash | 266 | 0.647 | 0.233 | 0.417 | 0.299 | 0.087 |
+| gemini+reordered/strict | gemini-2.5-flash | 266 | 0.624 | 0.217 | 0.417 | 0.286 | 0.064 |
+
+- gemini: 두 파서 불일치 6/266 셀 (파서 인공물의 크기)
+
+- gemini+reordered: 두 파서 불일치 6/266 셀 (파서 인공물의 크기)
+
+## judge 간 일치 (Cohen κ, strict 파서·완주 judge끼리)
+
+- gemini+reordered/strict ↔ gemini/strict: κ = 0.460
+
+## 모드별 (judge / TP·FP·FN, GT 양성 수)
+
+| mode | GT+ | gemini/agentdash | gemini/strict | gemini+reordered/agentdash | gemini+reordered/strict |
+|---|---|---|---|---|---|
+| 1.1 | 6 | 5·6·1 | 5·6·1 | 6·7·0 | 6·7·0 |
+| 1.2 | 4 | 0·2·4 | 0·2·4 | 0·3·4 | 0·3·4 |
+| 1.3 | 0 | 0·9·0 | 0·9·0 | 0·9·0 | 0·9·0 |
+| 1.4 | 0 | 0·3·0 | 0·3·0 | 0·4·0 | 0·4·0 |
+| 1.5 | 5 | 3·2·2 | 3·2·2 | 2·4·3 | 2·4·3 |
+| 2.1 | 0 | 0·2·0 | 0·2·0 | 0·2·0 | 0·2·0 |
+| 2.2 | 7 | 2·4·5 | 2·4·5 | 3·5·4 | 3·5·4 |
+| 2.3 | 3 | 1·4·2 | 1·3·2 | 2·3·1 | 2·3·1 |
+| 2.4 | 2 | 0·2·2 | 0·1·2 | 0·1·2 | 0·1·2 |
+| 2.5 | 2 | 0·0·2 | 0·3·2 | 1·2·1 | 1·8·1 |
+| 2.6 | 2 | 0·12·2 | 0·12·2 | 1·12·1 | 1·12·1 |
+| 3.1 | 0 | 0·5·0 | 0·5·0 | 0·5·0 | 0·5·0 |
+| 3.2 | 5 | 2·4·3 | 2·3·3 | 5·6·0 | 5·6·0 |
+| 3.3 | 12 | 3·3·9 | 3·3·9 | 0·3·12 | 0·3·12 |

@@ -45,6 +45,34 @@ We reference the MAST definitions and few-shot prompt structure from the origina
 [repo](https://github.com/multi-agent-systems-failure-taxonomy/MAST); the annotation calls are
 re-implemented in a thin wrapper (the released `agentdash` package is OpenAI-only).
 
+## Status — Phase 1 concluded (2026-07-08)
+
+Judge calibration ran on the 19 human-labelled traces with the original agentdash
+prompt (definitions + few-shot included), free-text responses, and the original
+regex parser side-by-side with a strict line parser.
+
+| judge / prompt order | acc | prec | recall | F1 | κ |
+|---|---|---|---|---|---|
+| o1, few-shot (paper Table 2) | 0.94 | 0.833 | 0.77 | 0.80 | **0.77** |
+| gemini-2.5-flash, original order | 0.662 | 0.216 | 0.333 | 0.262 | **0.056** |
+| gemini-2.5-flash, definitions-first | 0.624–0.647 | 0.217–0.233 | 0.417 | 0.286–0.299 | **0.064–0.087** |
+
+- Parser artifacts account for only 6/266 cells (the shipped agentdash v0.1.0 parser
+  has a reproducible misattribution bug — unescaped mode-ID dot + non-greedy DOTALL);
+  the disagreement is real, not parsing noise.
+- The judge does not even agree with itself across a semantically neutral prompt
+  reordering: self-agreement κ = 0.460, with modes 3.2 ↔ 3.3 flipping wholesale.
+- Pre-registered gate for Phase 2 (fresh-trace re-measurement) was κ ≥ 0.6.
+  **No free-tier Gemini judge passes → Phase 2 is frozen.** The Phase-1 finding is
+  the finding: the MAST LLM-judge does not transfer to this judge, so any
+  re-measured distribution would reflect the scale, not the weight.
+- Free-tier limits measured along the way: gemini-2.5-pro 0 req/day,
+  gemini-2.5-flash 20 req/day.
+
+Details: `results/calibration/report.md`. Resume path: enable paid tier (est. $2–5
+for the full Phase 2 design: AG2 × GSM × 30–50 runs + same-judge re-annotation of
+original traces) or add a non-Gemini judge.
+
 ## Research log
 
 The running log is written in Korean at [pheeree.github.io](https://pheeree.github.io)
