@@ -1,5 +1,6 @@
+data/*
+!data/README.md
 # 데이터는 출처(HF)에서 받는다 — scripts/download_data.sh
-data/*.json
 
 # Python
 __pycache__/

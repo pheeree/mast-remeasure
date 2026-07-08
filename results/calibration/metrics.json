@@ -1,0 +1,27 @@
+{
+ "judges": {
+  "gemini/agentdash": {
+   "n_cells": 266,
+   "accuracy": 0.662,
+   "precision": 0.216,
+   "recall": 0.333,
+   "f1": 0.262,
+   "kappa": 0.056
+  },
+  "gemini/strict": {
+   "n_cells": 266,
+   "accuracy": 0.662,
+   "precision": 0.216,
+   "recall": 0.333,
+   "f1": 0.262,
+   "kappa": 0.056
+  }
+ },
+ "o1_paper": {
+  "accuracy": 0.94,
+  "recall": 0.77,
+  "precision": 0.833,
+  "f1": 0.8,
+  "kappa": 0.77
+ }
+}

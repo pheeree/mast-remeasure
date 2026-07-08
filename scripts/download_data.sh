@@ -3,7 +3,7 @@
 # 데이터는 repo에 넣지 않는다 — 출처에서 직접 받는다.
 set -euo pipefail
 
-DEST="$(dirname "$0")/../data"
+DEST="$(dirname "$0")/../data/mast"
 mkdir -p "$DEST"
 
 BASE="https://huggingface.co/datasets/mcemri/MAST-Data/resolve/main"
